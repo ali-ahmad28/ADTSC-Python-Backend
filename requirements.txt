@@ -61,3 +61,4 @@ Werkzeug==2.1.2
 aioflask
 flask_cors
 asgiref
+flask

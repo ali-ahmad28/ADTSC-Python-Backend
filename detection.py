@@ -1,5 +1,5 @@
 from multiprocessing import Lock
-import cv2
+import cv2 
 import time
 from threading import Thread
 import threading

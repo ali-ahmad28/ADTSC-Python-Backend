@@ -62,3 +62,4 @@ aioflask
 flask_cors
 asgiref
 flask
+cv2

@@ -13,7 +13,7 @@ import numpy as np
 
 class ObjectDetection:
 
-    PATH = "D:\\FYPSemester8\\YOLOv5-Flask-master\\yolov5-master"
+    PATH = "yolov5-master"
 
     def __init__(self, capture_index, model_name):
         """
@@ -65,7 +65,7 @@ class ObjectDetection:
             global PATH
             model = torch.hub.load(self.PATH,
                                    'custom',
-                                   path="D:\\FYPSemester8\\FireSmokeGunKnifeDetection\\gunKnifeSmokeFire.pt",
+                                   path="gunKnifeSmokeFire.pt",
                                    source='local',
                                    force_reload=True
                                    )

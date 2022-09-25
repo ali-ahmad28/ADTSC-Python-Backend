@@ -62,4 +62,4 @@ aioflask
 flask_cors
 asgiref
 flask
-gunicorn
+waitress

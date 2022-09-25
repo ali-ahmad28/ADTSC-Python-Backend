@@ -5,6 +5,7 @@ import threading
 from detection import ObjectDetection
 from flask_cors import CORS
 import cv2 
+from waitress import serve
 
 app = Flask(__name__)
 
@@ -28,15 +29,16 @@ def generate_frames():
             yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
-@app.get("/")
-async def read_root():
+# @app.get("/")
+# async def read_root():
 
-    return render_template('index.html')
+#     return render_template('index.html')
 
 
-@app.get("/video")
+@app.get("/api/video")
 async def video():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-if __name__=="__main__":
-    app.run(debug=True)
+# if __name__=="__main__":
+#     app.run(debug=True)
+serve(app,host='0.0.0.0',port=8080,threads=1)

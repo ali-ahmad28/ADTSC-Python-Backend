@@ -63,13 +63,13 @@ class ObjectDetection:
         if model_name:
             print("model name reached")
             global PATH
-            # model = torch.hub.load(self.PATH,
-            #                        'custom',
-            #                        path="gunKnifeSmokeFire.pt",
-            #                        source='local',
-            #                        force_reload=True
-            #                        )
-            model = torch.hub.load('ultralytics/yolov5','custom', path="gunKnifeSmokeFire.pt")
+            model = torch.hub.load(self.PATH,
+                                   'custom',
+                                   path="gunKnifeSmokeFire.pt",
+                                   source='local',
+                                   force_reload=True
+                                   )
+            # model = torch.hub.load('ultralytics/yolov5','custom', path="gunKnifeSmokeFire.pt")
             model.eval()
             # print(model)
             print("DONE")

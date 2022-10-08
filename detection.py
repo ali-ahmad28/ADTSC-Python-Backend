@@ -16,14 +16,16 @@ class ObjectDetection:
     PATH = "yolov5-master"
 
     def __init__(self, capture_index, model_name):
-        """
-        Initializes the class with youtube url and output file.
-        :param url: Has to be as youtube URL,on which prediction is made.
-        :param out_file: A valid output file name.
-        """
+        
         self.capture_index = capture_index
         self.model = self.load_model(model_name)
         self.classes = self.model.names
+
+        #for fps
+        # FPS = 1/X
+        # X = desired FPS
+        self.FPS = 1/30
+        self.FPS_MS = int(self.FPS * 1000)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print("Using Device: ", self.device)
@@ -32,18 +34,22 @@ class ObjectDetection:
         assert self.cap.isOpened()
 
         self.grabbed, self.frame = self.cap.read()
+        #added for fps to read only 30 frames per second
+        time.sleep(self.FPS)
 
         if self.grabbed is False:
             print('[Exiting] No more frames to read')
             exit(0)
 
-        self.stopped = True
+        self.width= int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height= int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        # self.stopped = True
 
         self.t = Thread(target=self.update, args=())
         self.t.daemon = True
 
     def start(self):
-        self.stopped = False
+        # self.stopped = False
         self.t.start()
 
     def get_video_capture(self):
@@ -52,7 +58,14 @@ class ObjectDetection:
         :return: opencv2 video capture object, with lowest quality frame available for video.
         """
 
-        return cv2.VideoCapture(self.capture_index)
+        # return cv2.VideoCapture(self.capture_index)
+        capture = cv2.VideoCapture(self.capture_index)
+        
+        # default buffer size is 10 so latest frame will be displayed after 10 frames i.e. skip 10 frames in 1 second.
+        # i set the buffer size to 2 so latest frame will be displayed after 2 frames i.e. skip 2 frames in 1 secons.
+        # now gives latest frames after droping previous two frames because now we only reading 30 fps 
+        capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+        return capture
 
     def load_model(self, model_name):
         """
@@ -88,7 +101,7 @@ class ObjectDetection:
         frame = [frame]
         results = self.model(frame)
         labels, cord = results.xyxyn[0][:, -1], results.xyxyn[0][:, :-1]
-        print(labels)
+        # print(labels)
         return labels, cord
 
     def class_to_label(self, x):
@@ -120,30 +133,37 @@ class ObjectDetection:
                     labels[i]), (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, bgr, 2)
 
         return frame
-
+    
+    def getLabel(self,results):
+        labels, cord= results
+        n = len(labels)
+        type=''
+        for i in range(n):
+            type += ' '+self.class_to_label(labels[i])
+        return type
     def update(self):
         print("%d : Thread in targeted thread action", threading.get_ident())
         while True:
 
             #  if self.stopped is false, then we are reading the next frame
-            if not self.stopped:
+            # if not self.stopped:
                 self.grabbed, self.frame = self.cap.read()
 
-                if self.grabbed is False:
-                    print('[Exiting] No more frames to read')
-                    self.stopped = True
-                    pass
-            else:
-                break
-        self.cap.release()
+                # if self.grabbed is False:
+                #     print('[Exiting] No more frames to read')
+                #     # self.stopped = True
+                #     pass
+            # else:
+            #     break
+                # self.cap.release()
 
     # method for returning latest read frame
     def read(self):
         return self.frame
 
     # method called to stop reading frames
-    def stop(self):
-        self.stopped = True
+    # def stop(self):
+    #     self.stopped = True
 
     def __call__(self):
         """

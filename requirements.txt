@@ -63,3 +63,4 @@ flask_cors
 asgiref
 flask
 waitress
+cloudinary

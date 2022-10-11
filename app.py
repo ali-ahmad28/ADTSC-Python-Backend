@@ -28,8 +28,10 @@ writer = ''
 count=1
 delete_count=1
 initiateTraceBackIndex = 1
-finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
-delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
+finish_time=''
+delete_time=''
+# finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
+# delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 parent_directory = 'traceback'
@@ -45,7 +47,7 @@ def save_cloudinary(img):
     result= cloudinary.uploader.upload(img)
     url = result["secure_url"]
     return url
-def traceback(label[0]):
+def traceback(label):
     label[1]=''
     global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex
     if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
@@ -76,8 +78,8 @@ def traceback(label[0]):
                 print(f"trace back completed for {label[0]}")
                 break
 
-        tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg')
-        label[1]=tracebackCloud
+        # tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg')
+        # label[1]=tracebackCloud
         traceback_counter +=1
 
 def save_video(detection,real_frame):
@@ -106,6 +108,9 @@ def save_video(detection,real_frame):
 
 def generate_frames():
     print("Thread in main action", threading.get_ident())
+    global finish_time,delete_time
+    finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
+    delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
     detection = ObjectDetection(0, "gunKnifeSmokeFire.pt")
     detection.start()
     while True:
@@ -118,7 +123,7 @@ def generate_frames():
             global label,face_cascade,parent_directory,traceback_counter
             label[0]=detection.getLabel(results)
             #added for trace back 
-            traceback(label[0])
+            traceback(label)
             real_frame = detection.plot_boxes(results, detection.frame)
             real_frame = cv2.resize(real_frame, (640, 480))
             

@@ -1,4 +1,5 @@
 from ast import Global
+from flask import jsonify
 from distutils.log import debug
 from re import DEBUG, sub
 import time
@@ -20,7 +21,8 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 CORS(app)
 # added to save video
-label='starting detection'
+#label='starting detection'
+label = ["anomaly","traceback result"]
 flag = True
 writer = ''
 count=1
@@ -40,17 +42,15 @@ cloudinary.config(
 )
 
 def save_cloudinary(img):
-    print("here 1")
     result= cloudinary.uploader.upload(img)
-    print("here 2")
     url = result["secure_url"]
-    print("here 3")
     return url
-def traceback(label):
-    global face_cascade,parent_directory,traceback_counter
-    if((label.__contains__('pistol') or label.__contains__('knife') or label.__contains__('smoke') or label.__contains__('fire'))and count>2):
+def traceback(label[0]):
+    label[1]=''
+    global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex
+    if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
         directory = f'result{traceback_counter}'
-        print(f'traceback started for {label}')
+        print(f'traceback started for {label[0]}')
         path  = os.path.join(parent_directory,directory)
         os.mkdir(path)
         # To use a video file as input 
@@ -68,18 +68,22 @@ def traceback(label):
                 for (x, y, w, h) in faces:
                     cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
                 # cv2.imwrite('kang'+str(i)+'.jpg',img)
-                cv2.imwrite(f'traceback/result{traceback_counter}/{label}{i}.jpg',img)
+                cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
                 #cv2.imwrite(f'traceback/{label}{i}.jpg',img)
                 # cv2.imshow('img', img)
                 i+=1
             else:
-                print(f"trace back completed for {label}")
+                print(f"trace back completed for {label[0]}")
                 break
+
+        tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg')
+        label[1]=tracebackCloud
         traceback_counter +=1
 
 def save_video(detection,real_frame):
     global flag,writer,count,delete_count,initiateTraceBackIndex,finish_time,delete_time
     if(flag==True):
+        print("inside true")
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
         writer = cv2.VideoWriter(f'output{count}.avi',fourcc, 30.0, (detection.width,detection.height))
         flag=False
@@ -88,10 +92,12 @@ def save_video(detection,real_frame):
     if(datetime.datetime.now()<finish_time):
         writer.write(real_frame)
     else:
+        print("inside false")
         finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
         flag=True
     if(datetime.datetime.now()>=delete_time):
         try:
+            print("inside delete")
             delete_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
             os.remove(f'output{delete_count}.avi')
             delete_count +=1
@@ -110,9 +116,9 @@ def generate_frames():
             save_video(detection,real_frame) 
             results = detection.score_frame(detection.frame)
             global label,face_cascade,parent_directory,traceback_counter
-            label=detection.getLabel(results)
+            label[0]=detection.getLabel(results)
             #added for trace back 
-            traceback(label)
+            traceback(label[0])
             real_frame = detection.plot_boxes(results, detection.frame)
             real_frame = cv2.resize(real_frame, (640, 480))
             
@@ -122,14 +128,15 @@ def generate_frames():
             yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
-@app.get("/")
-async def read_root():
-    result = save_cloudinary('gunimage.jpeg')
-    return result
 @app.get("/api/anomalyType")
-async def anomalyType():
-        print(label)
-        return label
+async def read_root():
+    print(label[0])
+    print(label[1])
+    return jsonify({'label': label[0],'link':label[1]})
+# @app.get("/api/anomalyType")
+# async def anomalyType():
+#         print(label)
+#         return label
 # @app.route("/api/anomalyType")
 # async def anomalyType():
 #     def get_type():

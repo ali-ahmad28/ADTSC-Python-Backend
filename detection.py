@@ -35,7 +35,7 @@ class ObjectDetection:
 
         self.grabbed, self.frame = self.cap.read()
         #added for fps to read only 30 frames per second
-        time.sleep(self.FPS)
+        
 
         if self.grabbed is False:
             print('[Exiting] No more frames to read')
@@ -64,7 +64,7 @@ class ObjectDetection:
         # default buffer size is 10 so latest frame will be displayed after 10 frames i.e. skip 10 frames in 1 second.
         # i set the buffer size to 2 so latest frame will be displayed after 2 frames i.e. skip 2 frames in 1 secons.
         # now gives latest frames after droping previous two frames because now we only reading 30 fps 
-        capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+        capture.set(cv2.CAP_PROP_BUFFERSIZE, 0)
         return capture
 
     def load_model(self, model_name):
@@ -78,7 +78,7 @@ class ObjectDetection:
             global PATH
             model = torch.hub.load(self.PATH,
                                    'custom',
-                                   path="gunKnifeSmokeFire.pt",
+                                   path="gunKnifeSmokeFire(205).pt",
                                    source='local',
                                    force_reload=True
                                    )
@@ -148,6 +148,7 @@ class ObjectDetection:
             #  if self.stopped is false, then we are reading the next frame
             # if not self.stopped:
                 self.grabbed, self.frame = self.cap.read()
+                time.sleep(self.FPS)
 
                 # if self.grabbed is False:
                 #     print('[Exiting] No more frames to read')

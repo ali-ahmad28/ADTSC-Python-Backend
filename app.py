@@ -22,7 +22,8 @@ log.setLevel(logging.ERROR)
 CORS(app)
 # added to save video
 #label='starting detection'
-label = ["anomaly","traceback result"]
+tracebackCloud=''
+label = ["anomaly",tracebackCloud]
 flag = True
 writer = ''
 count=1
@@ -30,6 +31,7 @@ delete_count=1
 initiateTraceBackIndex = 1
 finish_time=''
 delete_time=''
+
 # finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
 # delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
 # Load the cascade
@@ -49,7 +51,7 @@ def save_cloudinary(img):
     return url
 def traceback(label):
     label[1]=''
-    global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex
+    global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex,tracebackCloud
     if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
         directory = f'result{traceback_counter}'
         print(f'traceback started for {label[0]}')
@@ -77,9 +79,13 @@ def traceback(label):
             else:
                 print(f"trace back completed for {label[0]}")
                 break
-
-        # tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg')
-        # label[1]=tracebackCloud
+        try:
+            tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{1}.jpg')
+            label[1]=tracebackCloud
+            print("saved to cloud",tracebackCloud)
+        except:
+            print("error cant save to cloud")
+            pass
         traceback_counter +=1
 
 def save_video(detection,real_frame):
@@ -111,7 +117,7 @@ def generate_frames():
     global finish_time,delete_time
     finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
     delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
-    detection = ObjectDetection(0, "gunKnifeSmokeFire.pt")
+    detection = ObjectDetection(0, "gunKnifeSmokeFire(205).pt")
     detection.start()
     while True:
             #added for fps wait for time in miliseconds to execute following functionality 30 FPS only

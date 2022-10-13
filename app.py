@@ -50,7 +50,6 @@ def save_cloudinary(img):
     url = result["secure_url"]
     return url
 def traceback(label):
-    label[1]=''
     global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex,tracebackCloud
     if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
         directory = f'result{traceback_counter}'
@@ -93,7 +92,7 @@ def save_video(detection,real_frame):
     if(flag==True):
         print("inside true")
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        writer = cv2.VideoWriter(f'output{count}.avi',fourcc, 30.0, (detection.width,detection.height))
+        writer = cv2.VideoWriter(f'output{count}.avi',fourcc, 5.0, (detection.width,detection.height))
         flag=False
         initiateTraceBackIndex=count-1
         count +=1
@@ -117,7 +116,7 @@ def generate_frames():
     global finish_time,delete_time
     finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
     delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
-    detection = ObjectDetection(0, "gunKnifeSmokeFire(205).pt")
+    detection = ObjectDetection(0, "gunKnifeSmokeFire(305).pt")
     detection.start()
     while True:
             #added for fps wait for time in miliseconds to execute following functionality 30 FPS only

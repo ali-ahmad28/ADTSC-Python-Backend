@@ -53,10 +53,6 @@ class ObjectDetection:
         self.t.start()
 
     def get_video_capture(self):
-        """
-        Creates a new video streaming object to extract video frame by frame to make prediction on.
-        :return: opencv2 video capture object, with lowest quality frame available for video.
-        """
 
         # return cv2.VideoCapture(self.capture_index)
         capture = cv2.VideoCapture(self.capture_index)
@@ -68,20 +64,17 @@ class ObjectDetection:
         return capture
 
     def load_model(self, model_name):
-        """
-        Loads Yolo5 model from pytorch hub.
-        :return: Trained Pytorch model.
-        """
 
         if model_name:
             print("model name reached")
             global PATH
             model = torch.hub.load(self.PATH,
                                    'custom',
-                                   path="gunKnifeSmokeFire(205).pt",
+                                   path="gunKnifeSmokeFire(305).pt",
                                    source='local',
                                    force_reload=True
                                    )
+            model.conf = 0.40
             # model = torch.hub.load('ultralytics/yolov5','custom', path="gunKnifeSmokeFire.pt")
             model.eval()
             # print(model)
@@ -92,11 +85,7 @@ class ObjectDetection:
         return model
 
     def score_frame(self, frame):
-        """
-        Takes a single frame as input, and scores the frame using yolo5 model.
-        :param frame: input frame in numpy/list/tuple format.
-        :return: Labels and Coordinates of objects detected by model in the frame.
-        """
+
         self.model.to(self.device)
         frame = [frame]
         results = self.model(frame)
@@ -105,20 +94,11 @@ class ObjectDetection:
         return labels, cord
 
     def class_to_label(self, x):
-        """
-        For a given label value, return corresponding string label.
-        :param x: numeric label
-        :return: corresponding string label
-        """
+
         return self.classes[int(x)]
 
     def plot_boxes(self, results, frame):
-        """
-        Takes a frame and its results as input, and plots the bounding boxes and label on to the frame.
-        :param results: contains labels and coordinates predicted by model on the given frame.
-        :param frame: Frame which has been scored.
-        :return: Frame with bounding boxes and labels ploted on it.
-        """
+
         labels, cord = results
         n = len(labels)
         x_shape, y_shape = frame.shape[1], frame.shape[0]
@@ -141,6 +121,7 @@ class ObjectDetection:
         for i in range(n):
             type += ' '+self.class_to_label(labels[i])
         return type
+
     def update(self):
         print("%d : Thread in targeted thread action", threading.get_ident())
         while True:
@@ -166,7 +147,7 @@ class ObjectDetection:
     # def stop(self):
     #     self.stopped = True
 
-    def __call__(self):
+    #def __call__(self):
         """
         This function is called when class is executed, it runs the loop to read the video frame by frame,
         and write the output into a new file.

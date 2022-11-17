@@ -7,6 +7,7 @@ import datetime
 from flask import Response , Flask, render_template
 import os
 import threading
+from threading import Thread
 from detection import ObjectDetection
 from flask_cors import CORS
 import cv2 
@@ -14,6 +15,7 @@ import json
 from waitress import serve
 import cloudinary
 import cloudinary.uploader
+from skimage.metrics import structural_similarity
 
 app = Flask(__name__)
 import logging
@@ -26,11 +28,13 @@ tracebackCloud=''
 label = ["anomaly",tracebackCloud]
 flag = True
 writer = ''
+traceback_writer=''
 count=1
 delete_count=1
 initiateTraceBackIndex = 1
 finish_time=''
 delete_time=''
+similarityFlage = False
 
 # finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
 # delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
@@ -49,8 +53,12 @@ def save_cloudinary(img):
     result= cloudinary.uploader.upload(img)
     url = result["secure_url"]
     return url
+def save_cloudinary_video(video):
+    result = cloudinary.uploader.upload(video,resource_type = "video")
+    url = result["secure_url"]
 def traceback(label):
-    global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex,tracebackCloud
+    global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex,tracebackCloud,similarityFlage,traceback_writer
+    similarityFlage = False
     if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
         directory = f'result{traceback_counter}'
         print(f'traceback started for {label[0]}')
@@ -59,6 +67,9 @@ def traceback(label):
         # To use a video file as input 
         cap = cv2.VideoCapture(f'output{initiateTraceBackIndex}.avi')
         i=1
+        #added for converting traceback images to video
+        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        traceback_writer = cv2.VideoWriter(f'traceback/result{traceback_counter}/{label[0]}.avi',fourcc, 5.0, (640,480))
         while True:
         # Read the frame
             grab, img = cap.read()
@@ -71,10 +82,24 @@ def traceback(label):
                 for (x, y, w, h) in faces:
                     cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
                 # cv2.imwrite('kang'+str(i)+'.jpg',img)
-                cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
+                #added for similarity check
+                if(similarityFlage==True):
+                    score, diff = structural_similarity(f'traceback/result{traceback_counter}/{label[0]}{i-1}.jpg', img , full=True)
+                    if(int(score*100)!=100):
+                        cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
+                        #added for converting traceback images to video
+                        traceback_writer.write(img)
+                        i+=1
+                else:
+                   cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
+                   #added for converting traceback images to video
+                   traceback_writer.write(img)
+                   i+=1
+                   similarityFlage=True       
+                # cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
                 #cv2.imwrite(f'traceback/{label}{i}.jpg',img)
                 # cv2.imshow('img', img)
-                i+=1
+                # i+=1
             else:
                 print(f"trace back completed for {label[0]}")
                 break
@@ -82,6 +107,12 @@ def traceback(label):
             tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{1}.jpg')
             label[1]=tracebackCloud
             print("saved to cloud",tracebackCloud)
+
+            #added to upload video
+            # tracebackCloud = save_cloudinary_video(f'traceback/result{traceback_counter}/{label[0]}.avi')
+            # label[1]=tracebackCloud
+            # print("saved to cloud",tracebackCloud)
+
         except:
             print("error cant save to cloud")
             pass
@@ -128,7 +159,12 @@ def generate_frames():
             global label,face_cascade,parent_directory,traceback_counter
             label[0]=detection.getLabel(results)
             #added for trace back 
-            traceback(label)
+            #traceback(label)
+            #added for multi-threading
+            thread = Thread(target=traceback,args=(label,))
+            thread.daemon=True
+            thread.start()
+            thread.join()
             real_frame = detection.plot_boxes(results, detection.frame)
             real_frame = cv2.resize(real_frame, (640, 480))
             

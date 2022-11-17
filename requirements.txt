@@ -64,3 +64,4 @@ asgiref
 flask
 waitress
 cloudinary
+scikit-image

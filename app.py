@@ -16,6 +16,10 @@ from waitress import serve
 import cloudinary
 import cloudinary.uploader
 from skimage.metrics import structural_similarity
+import multiprocessing
+import concurrent.futures
+import numpy as np
+
 
 app = Flask(__name__)
 import logging
@@ -25,7 +29,8 @@ CORS(app)
 # added to save video
 #label='starting detection'
 tracebackCloud=''
-label = ["anomaly",tracebackCloud]
+detectionRecordCloud=''
+label = ["anomaly",tracebackCloud,detectionRecordCloud]
 flag = True
 writer = ''
 traceback_writer=''
@@ -35,6 +40,7 @@ initiateTraceBackIndex = 1
 finish_time=''
 delete_time=''
 similarityFlage = False
+nextTraceBackTimer = ''
 
 # finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
 # delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
@@ -56,67 +62,85 @@ def save_cloudinary(img):
 def save_cloudinary_video(video):
     result = cloudinary.uploader.upload(video,resource_type = "video")
     url = result["secure_url"]
-def traceback(label):
-    global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex,tracebackCloud,similarityFlage,traceback_writer
+    return url
+def traceback(detection,detectedClass):
+    global face_cascade,parent_directory,traceback_counter,count,initiateTraceBackIndex,tracebackCloud,detectionRecordCloud,similarityFlage,traceback_writer
     similarityFlage = False
-    if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
-        directory = f'result{traceback_counter}'
-        print(f'traceback started for {label[0]}')
-        path  = os.path.join(parent_directory,directory)
-        os.mkdir(path)
-        # To use a video file as input 
-        cap = cv2.VideoCapture(f'output{initiateTraceBackIndex}.avi')
-        i=1
-        #added for converting traceback images to video
-        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        traceback_writer = cv2.VideoWriter(f'traceback/result{traceback_counter}/{label[0]}.avi',fourcc, 5.0, (640,480))
-        while True:
-        # Read the frame
-            grab, img = cap.read()
-            if(grab):
-                # Convert to grayscale
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                # Detect the faces
-                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-                # Draw the rectangle around each face
-                for (x, y, w, h) in faces:
-                    cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
-                # cv2.imwrite('kang'+str(i)+'.jpg',img)
-                #added for similarity check
-                if(similarityFlage==True):
-                    score, diff = structural_similarity(f'traceback/result{traceback_counter}/{label[0]}{i-1}.jpg', img , full=True)
-                    if(int(score*100)!=100):
-                        cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
-                        #added for converting traceback images to video
-                        traceback_writer.write(img)
-                        i+=1
-                else:
-                   cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
-                   #added for converting traceback images to video
-                   traceback_writer.write(img)
-                   i+=1
-                   similarityFlage=True       
+
+    #added to clear old traceback record from server
+
+    if(traceback_counter>0):
+        os.remove(f'result{traceback_counter-1}')
+    #if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
+    directory = f'result{traceback_counter}'
+    print(f'traceback started for {detectedClass}')
+    path  = os.path.join(parent_directory,directory)
+    os.mkdir(path)
+    # To use a video file as input 
+    cap = cv2.VideoCapture(f'output{initiateTraceBackIndex}.avi')
+    i=1
+    #added for converting traceback images to video
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    traceback_writer = cv2.VideoWriter(f'traceback/result{traceback_counter}/{detectedClass}.avi',fourcc, 5.0, (detection.width,detection.height))
+    print(".........................")
+    while True:
+    # Read the frame
+        grab, img = cap.read()
+        if(grab):
+            # Convert to grayscale
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # Detect the faces
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            # Draw the rectangle around each face
+            for (x, y, w, h) in faces:
+                cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            imgC = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # cv2.imwrite('kang'+str(i)+'.jpg',img)
+            #added for similarity check
+            if(similarityFlage==True):
+                img1 = cv2.imread(f'traceback/result{traceback_counter}/{detectedClass}{i-1}.jpg')
+                img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+                score, diff = structural_similarity(img1, imgC , full=True,)
+                if(int(score*100)<=80):
+                    cv2.imwrite(f'traceback/result{traceback_counter}/{detectedClass}{i}.jpg',img)
+                    #added for converting traceback images to video
+                    traceback_writer.write(img)
+                    i+=1
+            else:
+                cv2.imwrite(f'traceback/result{traceback_counter}/{detectedClass}{i}.jpg',img)
+                #added for converting traceback images to video
+                traceback_writer.write(img)
+                i+=1
+                similarityFlage=True       
                 # cv2.imwrite(f'traceback/result{traceback_counter}/{label[0]}{i}.jpg',img)
                 #cv2.imwrite(f'traceback/{label}{i}.jpg',img)
                 # cv2.imshow('img', img)
                 # i+=1
-            else:
-                print(f"trace back completed for {label[0]}")
-                break
-        try:
-            tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{1}.jpg')
-            label[1]=tracebackCloud
-            print("saved to cloud",tracebackCloud)
+        else:
+            print(f"trace back completed for {detectedClass}")
+            traceback_writer.release()
+            break
+    try:
+        print("try")
+        # tracebackCloud = save_cloudinary(f'traceback/result{traceback_counter}/{label[0]}{1}.jpg')
+        # label[1]=tracebackCloud
+        # print("saved to cloud",tracebackCloud)
 
-            #added to upload video
-            # tracebackCloud = save_cloudinary_video(f'traceback/result{traceback_counter}/{label[0]}.avi')
-            # label[1]=tracebackCloud
-            # print("saved to cloud",tracebackCloud)
+        #added to upload video 
+        tracebackCloud = save_cloudinary_video(f'traceback/result{traceback_counter}/{detectedClass}.avi')
+        label[1]=tracebackCloud
+        print("saved traceback video to cloud",tracebackCloud)
 
-        except:
-            print("error cant save to cloud")
-            pass
-        traceback_counter +=1
+        #added to save detection video to cloud
+
+        detectionRecordCloud = save_cloudinary_video(f'output{initiateTraceBackIndex}.avi')
+        label[2]=detectionRecordCloud
+        print("saved detection video to cloud",detectionRecordCloud)
+
+    except:
+        print("error cant save to cloud")
+        pass
+    traceback_counter +=1
 
 def save_video(detection,real_frame):
     global flag,writer,count,delete_count,initiateTraceBackIndex,finish_time,delete_time
@@ -144,27 +168,42 @@ def save_video(detection,real_frame):
 
 def generate_frames():
     print("Thread in main action", threading.get_ident())
-    global finish_time,delete_time
+    global finish_time,delete_time,nextTraceBackTimer
     finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
     delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
+    nextTraceBackTimer = datetime.datetime.now()
     detection = ObjectDetection(0, "gunKnifeSmokeFire(305).pt")
     detection.start()
     while True:
+            #print("main")
             #added for fps wait for time in miliseconds to execute following functionality 30 FPS only
             cv2.waitKey(detection.FPS_MS)
             real_frame = detection.read()
             #added to save video
             save_video(detection,real_frame) 
             results = detection.score_frame(detection.frame)
-            global label,face_cascade,parent_directory,traceback_counter
-            label[0]=detection.getLabel(results)
+            global label,face_cascade,parent_directory,traceback_counter,count
+            #label[0]=detection.getLabel(results)
+            anomaly=detection.getLabel(results)
             #added for trace back 
-            #traceback(label)
+            #traceback(detection,label)
             #added for multi-threading
-            thread = Thread(target=traceback,args=(label,))
-            thread.daemon=True
-            thread.start()
-            thread.join()
+            if((anomaly.__contains__('pistol') or anomaly.__contains__('knife') or anomaly.__contains__('smoke') or anomaly.__contains__('fire') or anomaly.__contains__('fight') or anomaly.__contains__('carCarsh'))and count>2 and (datetime.datetime.now()>=nextTraceBackTimer)):
+                label[0]=anomaly
+                #detectedClass = label[0]
+                thread = Thread(target=traceback,args=(detection,anomaly,))
+                thread.daemon=True
+                thread.start()
+                nextTraceBackTimer = datetime.datetime.now() + datetime.timedelta(seconds=120)
+            #thread.join()
+            #added for multiprocessing for traceback
+            # p1 = multiprocessing.Process(target=traceback, args=(label, ))
+            # p1.daemon=True
+            # p1.start()
+            # p1.join()
+            # with concurrent.futures.ThreadPoolExecutor() as executor:
+            #     executor.map(traceback,label)
+
             real_frame = detection.plot_boxes(results, detection.frame)
             real_frame = cv2.resize(real_frame, (640, 480))
             
@@ -178,11 +217,13 @@ def generate_frames():
 async def read_root():
     print(label[0])
     print(label[1])
-    return jsonify({'label': label[0],'link':label[1]})
-# @app.get("/api/anomalyType")
-# async def anomalyType():
-#         print(label)
-#         return label
+    print(label[2])
+    return jsonify({'label': label[0],'link':label[1],'detection':label[2]})
+@app.get("/api/test")
+async def test():
+          result = save_cloudinary_video('output2.avi')
+          print(result)
+          return 'hello'
 # @app.route("/api/anomalyType")
 # async def anomalyType():
 #     def get_type():

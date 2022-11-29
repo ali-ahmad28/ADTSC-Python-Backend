@@ -172,7 +172,7 @@ def generate_frames():
     finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
     delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
     nextTraceBackTimer = datetime.datetime.now()
-    detection = ObjectDetection(0, "gunKnifeSmokeFire(305).pt")
+    detection = ObjectDetection(0, "weights\Adtsc225.pt")
     detection.start()
     while True:
             #print("main")
@@ -188,7 +188,7 @@ def generate_frames():
             #added for trace back 
             #traceback(detection,label)
             #added for multi-threading
-            if((anomaly.__contains__('pistol') or anomaly.__contains__('knife') or anomaly.__contains__('smoke') or anomaly.__contains__('fire') or anomaly.__contains__('fight') or anomaly.__contains__('carCarsh'))and count>2 and (datetime.datetime.now()>=nextTraceBackTimer)):
+            if((anomaly.__contains__('gun') or anomaly.__contains__('knife') or anomaly.__contains__('smoke') or anomaly.__contains__('fire') or anomaly.__contains__('fight') or anomaly.__contains__('car-carsh'))and count>2 and (datetime.datetime.now()>=nextTraceBackTimer)):
                 label[0]=anomaly
                 #detectedClass = label[0]
                 thread = Thread(target=traceback,args=(detection,anomaly,))
@@ -219,11 +219,11 @@ async def read_root():
     print(label[1])
     print(label[2])
     return jsonify({'label': label[0],'link':label[1],'detection':label[2]})
-@app.get("/api/test")
-async def test():
-          result = save_cloudinary_video('output2.avi')
-          print(result)
-          return 'hello'
+# @app.get("/api/test")
+# async def test():
+#           result = save_cloudinary_video('output2.avi')
+#           print(result)
+#           return 'hello'
 # @app.route("/api/anomalyType")
 # async def anomalyType():
 #     def get_type():
@@ -241,4 +241,4 @@ async def video():
 
 # if __name__=="__main__":
 #     app.run(debug=True)
-serve(app,host='0.0.0.0',port=8080,threads=4)
+serve(app,host='0.0.0.0',port=8080,threads=10)

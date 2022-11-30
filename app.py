@@ -70,7 +70,7 @@ def traceback(detection,detectedClass):
     #added to clear old traceback record from server
 
     if(traceback_counter>0):
-        os.remove(f'result{traceback_counter-1}')
+        os.remove(f'traceback/result{traceback_counter-1}')
     #if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
     directory = f'result{traceback_counter}'
     print(f'traceback started for {detectedClass}')

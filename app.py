@@ -172,7 +172,7 @@ def generate_frames():
     finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
     delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
     nextTraceBackTimer = datetime.datetime.now()
-    detection = ObjectDetection(0, "weights\Adtsc225.pt")
+    detection = ObjectDetection(0, "weights\Adtsc250.pt")
     detection.start()
     while True:
             #print("main")

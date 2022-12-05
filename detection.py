@@ -70,7 +70,7 @@ class ObjectDetection:
             global PATH
             model = torch.hub.load(self.PATH,
                                    'custom',
-                                   path="weights\Adtsc250.pt",
+                                   path="weights\Adtsc450.pt",
                                    source='local',
                                    force_reload=True
                                    )

@@ -19,6 +19,7 @@ from skimage.metrics import structural_similarity
 import multiprocessing
 import concurrent.futures
 import numpy as np
+import shutil
 
 
 app = Flask(__name__)
@@ -70,7 +71,7 @@ def traceback(detection,detectedClass):
     #added to clear old traceback record from server
 
     if(traceback_counter>0):
-        os.remove(f'traceback/result{traceback_counter-1}')
+        shutil.rmtree(f'traceback/result{traceback_counter-1}')
     #if((label[0].__contains__('pistol') or label[0].__contains__('knife') or label[0].__contains__('smoke') or label[0].__contains__('fire'))and count>2):
     directory = f'result{traceback_counter}'
     print(f'traceback started for {detectedClass}')
@@ -127,13 +128,13 @@ def traceback(detection,detectedClass):
         # print("saved to cloud",tracebackCloud)
 
         #added to upload video 
-        tracebackCloud = save_cloudinary_video(f'traceback/result{traceback_counter}/{detectedClass}.avi')
+        #tracebackCloud = save_cloudinary_video(f'traceback/result{traceback_counter}/{detectedClass}.avi')
         label[1]=tracebackCloud
         print("saved traceback video to cloud",tracebackCloud)
 
         #added to save detection video to cloud
 
-        detectionRecordCloud = save_cloudinary_video(f'output{initiateTraceBackIndex}.avi')
+        #detectionRecordCloud = save_cloudinary_video(f'output{initiateTraceBackIndex}.avi')
         label[2]=detectionRecordCloud
         print("saved detection video to cloud",detectionRecordCloud)
 
@@ -172,7 +173,7 @@ def generate_frames():
     finish_time = datetime.datetime.now() + datetime.timedelta(seconds=20)
     delete_time = datetime.datetime.now() + datetime.timedelta(seconds=40)
     nextTraceBackTimer = datetime.datetime.now()
-    detection = ObjectDetection(0, "weights\Adtsc250.pt")
+    detection = ObjectDetection(0, "weights\Adtsc450.pt")
     detection.start()
     while True:
             #print("main")
